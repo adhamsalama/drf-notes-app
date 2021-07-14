@@ -1,0 +1,23 @@
+<html>
+
+    <head>
+        <title>Notes</title>
+    </head>
+    <body>
+        <h1>Notes</h1>
+        <ul id="notes">
+
+        </ul>
+    <script>
+        fetch('http://127.0.0.1:8000/notes')
+        .then(response => response.json())
+        .then(result => {
+            let ul = document.querySelector("#notes");
+            let notes = "";
+            for(let i = 0; i < result.length; i++)
+                notes += `<li>${result[i].content}, ${result[i].date}</li>`;
+            ul.innerHTML = notes;
+        })
+    </script>
+    </body>
+</html>
