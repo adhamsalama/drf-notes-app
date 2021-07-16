@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import Note, User
 
-class NoteSerializer(serializers.ModelSerializer):
+class NoteSerializer(serializers.HyperlinkedModelSerializer):
     owner = serializers.ReadOnlyField(source='owner.username')
     class Meta:
         model = Note
@@ -24,7 +24,7 @@ class NoteSerializer(serializers.ModelSerializer):
 
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.HyperlinkedModelSerializer):
     #notes = serializers.PrimaryKeyRelatedField(many=True, queryset=Note.objects.all())
     class Meta:
         model = User
