@@ -11,5 +11,5 @@ class Note(models.Model):
     title = models.CharField(max_length=64)
     content = models.TextField(blank=True)
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notes')
-    date = models.DateTimeField(auto_now_add=True)
+    date = models.DateTimeField()
     tags = models.JSONField(null=True)
