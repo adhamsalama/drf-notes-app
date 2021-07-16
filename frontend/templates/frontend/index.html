@@ -2,22 +2,192 @@
 
     <head>
         <title>Notes</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
     </head>
-    <body>
-        <h1>Notes</h1>
-        <ul id="notes">
+    <body class="container">
+        <h1 class="mx-auto w-75" id="username-notes">Notes</h1>
+        <div class="mx-auto w-75">
+            <button class="btn btn-primary" id="logout-button">Logout</button>
+        </div>
+        <form class="m-4 mx-auto w-75" method="post" action="http://127.0.0.1:8000/api/notes">
+            <input class="form-control mb-2" autofocus style="width: 18rem;" type="text" id="title" name="title" placeholder="Title">
+            <textarea class="form-control mb-2" id="content" name="Content" placeholder="Content"></textarea>
+            <input class="form-control mb-2" type="text" id="tags" name="tags" placeholder="Tags">
+            <button class="btn btn-primary" id="add-button">Add</button>
 
-        </ul>
+        </form>
+        <div id="notes">
+
+        </div>
+    <script src="https://unpkg.com/showdown/dist/showdown.min.js"></script>
     <script>
-        fetch('http://127.0.0.1:8000/notes')
+        function loadNotes(){
+            fetch('http://127.0.0.1:8000/api/notes')
+            .then(response => response.json())
+            .then(result => {
+                // result = result.results; // enable this for pagnation
+                let div = document.querySelector("#notes");
+                let notes = "";
+                let converter = new showdown.Converter();
+                converter.setOption('simpleLineBreaks', true);
+                for(let i = 0; i < result.length; i++)
+                    {
+                        console.log(result[i].tags)
+                        let tags = "";
+                        if(result[i].tags !== null)
+                        {
+                            for(let j = 0; j < result[i].tags.length; j++)
+                                tags += `<span class="badge rounded-pill bg-primary m-1">${result[i].tags[j]}</span>`
+                        }
+                        notes += `
+                                <div class="card w-75 m-4 mx-auto" id="${result[i].id}">
+                                  <div class="card-body">
+                                    <h5 class="card-title">${result[i].title}</h5>
+                                    <h6 class="card-subtitle mb-2 text-muted">${new Date(result[i].date).toLocaleString()}</h6>
+                                    ${tags}
+                                    <div class="card-text">
+                                        ${converter.makeHtml(result[i].content)}
+                                    </div>
+                                  </div>
+                                  <div class="btn-group">
+                                    <button class="btn btn-primary edit-button">Edit</button>
+                                    <button class="btn btn-danger delete-button">Delete</button>
+                                  </div>
+                                </div>
+                                `;
+                    }
+                if(notes == "")
+                    notes = "<h2 class='mx-auto w-75'>You don't have any notes.</h2>";
+                div.innerHTML = notes;
+                
+                // add onclick event for delete buttons
+                let deleteButtons = document.querySelectorAll(".delete-button");
+                for(let i = 0; i < deleteButtons.length; i++)
+                {
+                    deleteButtons[i].onclick = () => {
+                        let btnGroup = deleteButtons[i].parentElement;
+                        let id = btnGroup.parentElement.id;
+                        const request = new Request(
+                                `http://127.0.0.1:8000/api/notes/${id}`,
+                                {headers: {'X-CSRFToken': csrftoken, 'content-type': 'application/json'}}
+                            );
+                        fetch(request, {
+                            method: 'DELETE',
+                            mode: 'same-origin'  // Do not send CSRF token to another domain.
+                        }).then(() => loadNotes())
+                    }
+                }
+                
+                // add onclick event for delete button
+                let editButtons = document.querySelectorAll(".edit-button");
+                for(let i = 0; i < editButtons.length; i++)
+                {   editButtons[i].onclick = () => {
+                        let btnGroup = editButtons[i].parentElement;
+                        let parent = btnGroup.parentElement;
+                        let content = parent.querySelector(".card-text");
+                        let convertedMD = converter.makeMarkdown(content.innerHTML);
+                        content.innerHTML = convertedMD;
+                        content.contentEditable = true;
+                        // change it to a save button
+                        editButtons[i].innerText = "Save";
+                        let saveButton = editButtons[i];
+                        saveButton.onclick = () => {
+                            console.log(content.innerHTML);
+                            const request = new Request(
+                                `http://127.0.0.1:8000/api/notes/${parent.id}`,
+                                {headers: {'X-CSRFToken': csrftoken, 'content-type': 'application/json'}}
+                            );
+                            fetch(request, {
+                                method: 'PATCH',
+                                mode: 'same-origin',  // Do not send CSRF token to another domain.
+                                body: JSON.stringify({
+                                    content: content.innerText
+                                })
+                            }).then(response => {
+                                if(response.status == 400)
+                                    response.json().then(result => {alert(result.content)})
+                                else if(response.status == 200)
+                                    loadNotes();
+                                });
+                        }
+                    }
+                }
+            })};
+        loadNotes();
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        const csrftoken = getCookie('csrftoken');
+        // get username and display it
+        fetch('http://127.0.0.1:8000/api/users/current_user', {
+                method: 'GET',
+                mode: 'same-origin'  // Do not send CSRF token to another domain.
+        })
         .then(response => response.json())
         .then(result => {
-            let ul = document.querySelector("#notes");
-            let notes = "";
-            for(let i = 0; i < result.length; i++)
-                notes += `<li>${result[i].content}, ${result[i].date}</li>`;
-            ul.innerHTML = notes;
+            let header = document.querySelector("#username-notes");
+            header.innerHTML = result.username + "'s " + header.innerHTML;
         })
+        document.querySelector("form").onsubmit = () => {return false};
+        let addButton = document.querySelector("#add-button");
+        
+        // add note
+        addButton.onclick = () => {
+            let title = document.querySelector("#title");
+            let content = document.querySelector("#content");
+            let tags = document.querySelector("#tags");
+            const request = new Request(
+                                "http://127.0.0.1:8000/api/notes",
+                                {headers: {'X-CSRFToken': csrftoken, 'content-type': 'application/json'}}
+                            );
+            fetch(request, {
+                method: 'POST',
+                mode: 'same-origin',  // Do not send CSRF token to another domain.
+                body: JSON.stringify({
+                    title: title.value,
+                    content: content.value,
+                    tags: tags.value.trim().split(","),
+                    date: new Date()
+                })
+            }).then(response => {                 
+                if(response.ok) {
+                    // clear input tags value
+                    title.value = "";
+                    content.value = "";
+                    tags.value = "";
+                    // reload notes
+                    loadNotes();
+                }
+                else {
+                    if(response.status == 400)
+                        response.json().then(result => {alert(result.content)})
+                    else
+                    response.json().then(result => {alert(result.detail)})
+                }
+            })
+        }
+        let logoutButton = document.querySelector("#logout-button");
+        logoutButton.onclick = () => {
+            fetch('http://127.0.0.1:8000/api/logout')
+            .then(response => response.json())
+            .then(result => {
+                window.location.replace('http://127.0.0.1:8000');
+            })
+        }
+        
+        
     </script>
     </body>
 </html>
