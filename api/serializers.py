@@ -25,7 +25,9 @@ class NoteSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
-    #notes = serializers.PrimaryKeyRelatedField(many=True, queryset=Note.objects.all())
+    notes = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    password = serializers.CharField(write_only=True)
     class Meta:
         model = User
-        fields = ['id', 'username', 'notes']
+        fields = ['id', 'username', 'notes', 'password']
+    
