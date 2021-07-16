@@ -11,14 +11,14 @@ class NoteSerializer(serializers.HyperlinkedModelSerializer):
     # https://www.django-rest-framework.org/api-guide/serializers/#field-level-validation
 
     def validate_content(self, value):
-        if value.lower() == "bad word":
-            raise serializers.ValidationError("Not valid")
+        if "bad word" in value.lower():
+            raise serializers.ValidationError("Behave yourself")
         return value
 
     # Object-level validation
     def validate(self, data):
-        if data['content'].lower() == 'bad word':
-            raise serializers.ValidationError('Not valid')
+        if 'bad word' in data['content'].lower():
+            raise serializers.ValidationError('Behave yourself')
         return data
 
 
