@@ -2,9 +2,17 @@ from .models import Note, User
 from .serializers import NoteSerializer, UserSerializer
 from rest_framework import generics, permissions
 from .permissions import IsOwnerOrReadOnly, IsOwner
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
+from rest_framework.throttling import UserRateThrottle
+from .throttlers import PostUserRateThrottle
+from django.views.decorators.http import require_http_methods
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest
+from django.contrib.auth import authenticate, login, logout
+from django.shortcuts import render, redirect
+from rest_framework.views import APIView
+
 
 # Create your views here.
 
@@ -15,7 +23,7 @@ def api_root(request, format=None):
         'notes': reverse('note-list', request=request, format=format)
     })
 
-
+#@action(detail=True, methods=["post"], throttle_classes=[PostUserRateThrottle])
 class NoteList(generics.ListCreateAPIView):
     """
     List all notes.
@@ -23,6 +31,7 @@ class NoteList(generics.ListCreateAPIView):
     #queryset = Note.objects.all()
     serializer_class = NoteSerializer
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [PostUserRateThrottle]
 
     def get_queryset(self):
         return Note.objects.filter(owner=self.request.user).order_by('-date')
