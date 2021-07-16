@@ -19,8 +19,8 @@ from rest_framework.views import APIView
 @api_view(['GET'])
 def api_root(request, format=None):
     return Response({
-        'users': reverse('user-list', request=request, format=format),
-        'notes': reverse('note-list', request=request, format=format)
+        'users': reverse('api:user-list', request=request, format=format),
+        'notes': reverse('api:note-list', request=request, format=format)
     })
 
 #@action(detail=True, methods=["post"], throttle_classes=[PostUserRateThrottle])
@@ -60,3 +60,37 @@ class UserList(generics.ListAPIView):
 class UserDetail(generics.RetrieveAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+
+
+class RegisterUser(APIView):
+    def post(self, request):
+        print(request.data)
+        user = User.objects.create_user(username=request.data['username'], password=request.data['password'])
+        user.save()
+        login(request, user)
+        return Response({"Registered successfully."}, status=200)
+
+
+class LoginUser(APIView):
+    def post(self, request):
+        print(request.data)
+        user = authenticate(request, username=request.data['username'], password=request.data['password'])
+        print(user)
+        if user is not None:
+            login(request, user)
+            return Response({"Logged in successfully."}, status=200)
+        else:
+            return Response({"Invalid credentials."}, status=400)
+
+
+class LogoutUser(APIView):
+    def get(self, request):
+        logout(request)
+        return Response({"Logged out successfully."},status=200)
+
+
+@api_view(["GET"])
+def get_username(request):
+    return Response({
+        'username': request.user.username
+    })
