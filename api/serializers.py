@@ -5,7 +5,7 @@ class NoteSerializer(serializers.ModelSerializer):
     owner = serializers.ReadOnlyField(source='owner.username')
     class Meta:
         model = Note
-        fields = ['id', 'title', 'content', 'date', 'owner']
+        fields = ['id', 'title', 'content', 'date', 'owner', 'tags']
     
     # Field-level validation
     # https://www.django-rest-framework.org/api-guide/serializers/#field-level-validation
